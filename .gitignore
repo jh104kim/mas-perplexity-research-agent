@@ -1,0 +1,26 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Generated artifacts
+research_plan.yaml
+approved_plan.yaml
+research_prompt.md
+raw_result_*.md
+parsed_result.json
+evaluation_report.yaml
+critic_notes.md
+quick_summary_report.md
+report.html
+run_log.json
+
