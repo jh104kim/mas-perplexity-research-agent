@@ -148,3 +148,30 @@ python -m app.cli --topic "LangGraph MAS Workflow" --mode hitl --result-file tes
 
 - CLI E2E는 임시 출력 폴더에서 수행했다.
 - `pip install -e ".[dev]"` 과정에서 생성된 `*.egg-info/`는 `.gitignore`에 추가하고 제거했다.
+
+## 2026-07-04 18:26:51 +09:00 2차 경량 확장 구현
+
+### 구현 내용
+
+- 보고서 품질 개선: `Source Summary`, `Next Questions` 섹션 추가
+- 날짜별 출력 옵션 추가: `--dated-output`
+- HITL 사용성 개선: 결과 파일이 없을 때 `hitl_instructions.md` 생성
+- README에 날짜별 출력과 HITL 안내 파일 설명 추가
+
+### 검증 결과
+
+| 항목 | 결과 |
+| --- | --- |
+| `python -m pytest` | 14 passed |
+| 날짜별 출력 CLI E2E | 통과 |
+| HITL 안내 파일 생성 | 테스트 통과 |
+| 기존 mock/hitl 회귀 | 테스트 통과 |
+
+### 보류 유지
+
+- Perplexity API 직접 호출
+- 웹 대시보드
+- Obsidian 저장
+- Slack 알림
+
+위 항목은 PRD 승격 전까지 구현하지 않는다.

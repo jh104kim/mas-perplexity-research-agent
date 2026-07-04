@@ -40,6 +40,12 @@ python -m app.cli --topic "LangGraph MAS Workflow" --mode mock
 python -m app.cli --topic "LangGraph MAS Workflow" --mode mock --auto-approve
 ```
 
+실행마다 별도 폴더를 만들려면:
+
+```bash
+python -m app.cli --topic "LangGraph MAS Workflow" --mode mock --auto-approve --dated-output --output-dir runs
+```
+
 ## HITL 실행
 
 먼저 프롬프트를 생성한다.
@@ -48,7 +54,7 @@ python -m app.cli --topic "LangGraph MAS Workflow" --mode mock --auto-approve
 python -m app.cli --topic "LangGraph MAS Workflow" --mode hitl
 ```
 
-생성된 `research_prompt.md`를 Perplexity에 직접 입력한 뒤 결과를 Markdown 파일로 저장한다. 그다음 결과 파일을 지정해서 실행한다.
+생성된 `research_prompt.md`를 Perplexity에 직접 입력한 뒤 결과를 Markdown 파일로 저장한다. 결과 파일이 없으면 `hitl_instructions.md`에 다음 행동이 저장된다. 그다음 결과 파일을 지정해서 실행한다.
 
 ```bash
 python -m app.cli --topic "LangGraph MAS Workflow" --mode hitl --result-file raw_result_01.md
@@ -66,10 +72,10 @@ python -m app.cli --topic "LangGraph MAS Workflow" --mode hitl --result-file raw
 - `quick_summary_report.md`
 - `report.html`
 - `run_log.json`
+- `hitl_instructions.md`는 HITL 결과 파일이 없을 때만 생성된다.
 
 ## 현재 정책
 
 - Perplexity API 직접 호출은 하지 않는다.
 - API Key 없이 `mock`, `hitl` 모드가 동작한다.
 - Perplexity API 직접 호출은 Further Work로 보류한다.
-

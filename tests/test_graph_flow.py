@@ -37,5 +37,5 @@ def test_hitl_mode_without_result_file_waits_for_user_file(tmp_path):
     assert state["status"] == "awaiting_hitl_result"
     assert state["errors"]
     assert (tmp_path / "research_prompt.md").exists()
+    assert (tmp_path / "hitl_instructions.md").exists()
     assert (tmp_path / "run_log.json").exists()
-

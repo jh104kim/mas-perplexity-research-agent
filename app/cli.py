@@ -7,6 +7,7 @@ import yaml
 
 from app.graph import run_approved_state
 from app.nodes.planner import planner_node
+from app.output import make_dated_output_dir
 from app.plan_gate import apply_plan_decision
 from app.state import ExecutorMode, create_initial_state
 
@@ -17,6 +18,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mode", choices=["mock", "hitl"], default="mock", help="Execution mode")
     parser.add_argument("--result-file", help="Markdown result file for hitl mode")
     parser.add_argument("--output-dir", default=".", help="Directory for generated artifacts")
+    parser.add_argument("--dated-output", action="store_true", help="Create a dated subfolder under output-dir")
     parser.add_argument("--auto-approve", action="store_true", help="Skip interactive plan gate")
     return parser.parse_args()
 
@@ -31,10 +33,11 @@ def prompt_for_decision() -> str:
 
 def main() -> int:
     args = parse_args()
+    output_dir = make_dated_output_dir(args.output_dir, args.topic) if args.dated_output else Path(args.output_dir)
     state = create_initial_state(
         args.topic,
         mode=args.mode,
-        output_dir=Path(args.output_dir),
+        output_dir=output_dir,
         result_file=args.result_file,
     )
 
@@ -65,4 +68,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
