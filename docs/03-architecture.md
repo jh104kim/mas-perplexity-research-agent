@@ -8,7 +8,7 @@
 CLI
 → LangGraph Workflow
 → Nodes
-→ Executor
+→ Mock Executor 또는 HITL Result Import
 → Artifacts
 ```
 
@@ -26,12 +26,13 @@ app/
   executors/
     base.py
     mock_executor.py
-    perplexity_executor.py
+    manual_executor.py
   nodes/
     intake.py
     planner.py
     prompt_builder.py
     executor.py
+    hitl_result_loader.py
     parser.py
     evaluator.py
     critic.py
@@ -60,11 +61,15 @@ tests/
 flowchart TD
   A["CLI topic 입력"] --> B["Plan 생성"]
   B --> C{"CLI 선택"}
-  C -->|approve| D["Prompt 생성"]
+  C -->|approve| D["Perplexity Prompt 생성"]
   C -->|revise| B
   C -->|stop| Z["정상 종료"]
-  D --> E["Executor 실행"]
-  E --> F["Parser"]
+  D --> E{"mode"}
+  E -->|mock| F1["Mock Executor 실행"]
+  E -->|hitl| F2["사용자 Perplexity 직접 실행"]
+  F2 --> F3["Markdown 결과 파일 입력"]
+  F1 --> F["Parser"]
+  F3 --> F["Parser"]
   F --> G["Evaluator"]
   G --> H{"85점 이상?"}
   H -->|Yes| I["Report 생성"]
@@ -85,6 +90,7 @@ purpose
 depth
 report_type
 executor_mode
+result_file
 research_plan
 plan_status
 research_prompt
@@ -106,11 +112,12 @@ errors
 | 필드 | 생성/수정 주체 | 검증 포인트 |
 | --- | --- | --- |
 | `topic` | CLI/intake | 빈 값이면 실행하지 않는다. |
-| `executor_mode` | CLI | `mock`, `perplexity` 중 하나여야 한다. |
+| `executor_mode` | CLI | `mock`, `hitl` 중 하나여야 한다. |
+| `result_file` | CLI/HITL | hitl 모드에서 사용자가 가져온 Markdown 파일 경로다. |
 | `research_plan` | planner | 승인 전 사용자에게 출력된다. |
 | `plan_status` | CLI Plan Gate | `approve`, `revise`, `stop` 중 하나여야 한다. |
-| `research_prompt` | prompt_builder | Executor 입력으로 사용된다. |
-| `raw_results` | executor | 승인 후에만 값이 생긴다. |
+| `research_prompt` | prompt_builder | Mock 입력 또는 사용자가 Perplexity에 직접 넣을 프롬프트로 사용된다. |
+| `raw_results` | mock executor 또는 hitl_result_loader | 승인 후에만 값이 생긴다. |
 | `parsed_result` | parser | 보고서 생성의 입력이 된다. |
 | `evaluation_score` | evaluator | 0~100 범위여야 한다. |
 | `improvement_count` | critic/improver loop | 3을 초과하면 안 된다. |
@@ -131,7 +138,7 @@ class ResearchExecutor(Protocol):
 | mode | 동작 |
 | --- | --- |
 | mock | `MockResearchExecutor` 사용 |
-| perplexity | `PerplexityResearchExecutor` 사용 |
+| hitl | `ManualResearchExecutor` 또는 `hitl_result_loader`로 사용자 제공 Markdown 파일 읽기 |
 
 기본값은 `mock`이다.
 
@@ -144,10 +151,11 @@ class ResearchExecutor(Protocol):
 | `app/state.py` | Workflow 상태 정의 | 전체 |
 | `app/executors/base.py` | Executor Protocol 정의 | FR-16 |
 | `app/executors/mock_executor.py` | API 없는 테스트용 결과 반환 | FR-08 |
-| `app/executors/perplexity_executor.py` | 실제 Perplexity 호출 | FR-16, NFR-02 |
+| `app/executors/manual_executor.py` | 사용자 제공 Markdown 결과 파일 읽기 | FR-17 |
 | `app/nodes/planner.py` | 리서치 계획 생성 | FR-04, FR-06 |
-| `app/nodes/prompt_builder.py` | Executor용 프롬프트 생성 | FR-08, FR-16 |
-| `app/nodes/executor.py` | 선택된 Executor 실행 | FR-05, FR-08, FR-16 |
+| `app/nodes/prompt_builder.py` | Perplexity에 직접 넣을 프롬프트 생성 | FR-16 |
+| `app/nodes/executor.py` | mock 모드 결과 생성 | FR-05, FR-08 |
+| `app/nodes/hitl_result_loader.py` | hitl 모드 결과 파일 읽기 | FR-17 |
 | `app/nodes/parser.py` | Markdown 결과 구조화 | FR-09 |
 | `app/nodes/evaluator.py` | 100점 기준 평가 | FR-10 |
 | `app/nodes/critic.py` | 낮은 점수 원인 분석 | FR-11 |
@@ -179,7 +187,7 @@ run_log.json
 | `research_plan.yaml` | planner | `test_plan_gate.py` |
 | `approved_plan.yaml` | Plan Gate | `test_plan_gate.py` |
 | `research_prompt.md` | prompt_builder | `test_graph_flow.py` |
-| `raw_result_01.md` | executor | `test_executor_mock.py` |
+| `raw_result_01.md` | mock executor 또는 사용자 | `test_executor_mock.py`, `test_graph_flow.py` |
 | `parsed_result.json` | parser | `test_parser.py` |
 | `evaluation_report.yaml` | evaluator | `test_evaluator.py` |
 | `critic_notes.md` | critic | `test_improvement_loop.py` |
@@ -191,16 +199,17 @@ run_log.json
 
 - 에러는 `ResearchState.errors`에 누적한다.
 - 어떤 노드에서 실패했는지 `run_log.json`에 남긴다.
-- API Key 값 자체는 절대 기록하지 않는다.
+- API Key는 기본 Workflow에서 사용하지 않는다.
 
 ## 아키텍처 결정
 
 | 결정 | 이유 | 영향 |
 | --- | --- | --- |
-| Executor Protocol 고정 | mock과 perplexity를 같은 방식으로 호출하기 위해 | Graph 변경 없이 Executor 교체 가능 |
-| Plan Gate를 Executor 앞에 둠 | 승인 전 API 실행을 막기 위해 | 비용과 오작동 방지 |
+| Executor Protocol 고정 | mock 결과와 수동 입력 결과를 같은 raw 결과로 다루기 위해 | Parser 이후 Graph 재사용 가능 |
+| Plan Gate를 Prompt 생성 앞에 둠 | 승인 전 리서치 프롬프트 생성을 막기 위해 | 불필요한 수동 작업 방지 |
 | 결과 저장을 파일 기반으로 시작 | MVP를 단순하게 유지하기 위해 | DB는 추후 검토 |
 | 개선 루프 최대 3회 | 무한 반복 방지 | 테스트로 쉽게 검증 가능 |
+| Perplexity API 직접 호출 제외 | 비용과 인증 부담을 줄이고 사용자가 직접 품질을 확인하기 위해 | API Key 없이 MVP 가능 |
 
 ## 문서 자체 평가
 

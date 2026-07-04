@@ -13,7 +13,7 @@
 ```text
 Phase 1: Mock Workflow Skeleton
 Phase 2: Evaluation Loop
-Phase 3: Perplexity Executor 연결
+Phase 3: HITL Perplexity Result Import
 ```
 
 ## 단계별 추적 요약
@@ -22,9 +22,9 @@ Phase 3: Perplexity Executor 연결
 | --- | --- | --- | --- |
 | Phase 1 | FR-01~FR-10, FR-13~FR-15 | Plan Gate, Mock, Parser, Report, Graph | 기본 Workflow와 파일 산출물 |
 | Phase 2 | FR-10~FR-12 | Evaluator, Improvement Loop | 평가/개선 루프 |
-| Phase 3 | FR-02, FR-16, NFR-02 | Executor mode, 보안 테스트 | Perplexity Executor |
+| Phase 3 | FR-02, FR-16, FR-17, NFR-02 | HITL mode, 결과 파일 입력 테스트 | Perplexity 프롬프트와 사용자 제공 Markdown 입력 |
 
-Phase 1과 Phase 2는 `08-implementation-todo.md`의 1차 MVP 구현 TODO에 해당한다. Phase 3과 Further Work는 2차 확장 TODO에 해당한다.
+Phase 1부터 Phase 3까지는 `08-implementation-todo.md`의 1차 MVP 구현 TODO에 해당한다. Further Work는 2차 확장 TODO에 해당한다.
 
 ## Phase 1. Mock Workflow Skeleton
 
@@ -90,35 +90,34 @@ Phase 1과 Phase 2는 `08-implementation-todo.md`의 1차 MVP 구현 TODO에 해
 - `04-tdd-plan.md`의 TDD-07, TDD-08이 통과하는지 확인한다.
 - `05-test-scenarios.md`의 TC-EVAL, TC-LOOP가 테스트로 구현됐는지 확인한다.
 
-## Phase 3. Perplexity Executor 연결
+## Phase 3. HITL Perplexity Result Import
 
 목표:
 
-- 검증된 Workflow에 실제 Perplexity 호출부만 추가한다.
+- 검증된 Workflow에 Perplexity 리서치 프롬프트 생성과 사용자 제공 Markdown 결과 파일 입력을 추가한다.
 
 구현 순서:
 
-1. `PerplexityResearchExecutor` 추가
-2. `.env`에서 API Key 로드
-3. mode 선택 로직 추가
-4. API 호출 실패 처리 추가
-5. API Key 마스킹 테스트 추가
+1. `hitl` mode 선택 로직 추가
+2. Perplexity 리서치 프롬프트를 `research_prompt.md`로 저장
+3. 사용자에게 Perplexity 직접 실행 안내 메시지 출력
+4. `result_file` 또는 기본 `raw_result_01.md` 파일 읽기
+5. 결과 파일이 없을 때 사용자 입력 필요 상태 기록
 6. mock mode 회귀 테스트 실행
-7. perplexity mode 수동 실행 검증
+7. hitl mode fixture 파일 기반 E2E 검증
 
 완료 기준:
 
-- API 호출 성공
-- `raw_result_01.md` 저장
-- API Key 로그 미노출
-- API Key 보고서 미노출
-- 실패 노드가 `run_log.json`에 기록됨
-- Graph 구조 변경 없이 Executor만 교체됨
+- `research_prompt.md` 생성
+- 사용자가 가져온 `raw_result_01.md` 읽기
+- API Key 없이 동작
+- 결과 파일이 없으면 어느 단계에서 대기/실패했는지 `run_log.json`에 기록됨
+- Parser 이후 Graph 구조는 mock mode와 동일함
 
 완료 후 확인할 문서:
 
-- `02-prd.md`의 FR-16, NFR-02가 만족되는지 확인한다.
-- `07-further-work.md`로 보류한 Web UI 자동화와 혼동하지 않는다.
+- `02-prd.md`의 FR-16, FR-17, NFR-02가 만족되는지 확인한다.
+- `07-further-work.md`로 보류한 API 직접 호출, Web UI 자동화와 혼동하지 않는다.
 
 ## 최종 확인 체크리스트
 
@@ -130,8 +129,9 @@ Phase 1과 Phase 2는 `08-implementation-todo.md`의 1차 MVP 구현 TODO에 해
 - [ ] improvement loop 3회 초과 없음 확인
 - [ ] `quick_summary_report.md` 생성 확인
 - [ ] `report.html` 생성 확인
-- [ ] perplexity mode에서 Executor만 교체 확인
-- [ ] API Key 노출 없음 확인
+- [ ] hitl mode에서 Perplexity 프롬프트 생성 확인
+- [ ] hitl mode에서 사용자 제공 Markdown 결과 파일 입력 확인
+- [ ] API Key 없이 동작 확인
 - [ ] 문제가 없으면 "문제 없음" 명시
 
 ## 구현 중 문서 업데이트 규칙

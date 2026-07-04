@@ -57,20 +57,21 @@ Refactor: 중복과 이름만 정리
 검증할 내용:
 
 - 85점 이상이면 루프 없이 종료한다.
-- 85점 미만이면 Critic, Improver를 거쳐 Executor를 다시 실행한다.
+- 85점 미만이면 Critic, Improver를 거쳐 mock은 재실행하고 hitl은 개선 프롬프트를 다시 사용자에게 제공한다.
 - 개선 횟수는 최대 3회다.
 - 3회 후에도 미달이면 한계가 포함된 보고서를 만든다.
 
-## Phase 3. Perplexity Executor
+## Phase 3. HITL Result Import
 
-목표는 검증된 Workflow 뒤에 실제 Executor만 붙이는 것이다.
+목표는 검증된 Workflow 뒤에 사용자가 가져온 Perplexity Markdown 결과 파일을 붙이는 것이다.
 
 먼저 작성할 테스트:
 
-- mode가 `perplexity`이면 `PerplexityResearchExecutor`가 선택된다.
+- mode가 `hitl`이면 Perplexity 리서치 프롬프트가 생성된다.
+- `result_file`이 있으면 Markdown 파일을 읽어 `raw_results`에 넣는다.
+- `result_file`이 없으면 사용자에게 결과 파일 입력이 필요하다는 상태를 남긴다.
 - Graph 구조는 mock mode와 동일하다.
-- API Key가 없는 경우 명확한 에러를 낸다.
-- API Key는 로그와 보고서에 남지 않는다.
+- API Key 없이 동작한다.
 
 ## 테스트 우선순위
 
@@ -81,7 +82,7 @@ Refactor: 중복과 이름만 정리
 5. Improvement Loop 테스트
 6. Report Builder 테스트
 7. Graph 전체 흐름 테스트
-8. Perplexity Executor 선택 테스트
+8. HITL Result Import 테스트
 
 ## 요구사항별 테스트 매핑
 
@@ -97,14 +98,15 @@ Refactor: 중복과 이름만 정리
 | TDD-08 | FR-11, FR-12 | `test_improvement_loop.py` | 85점 미만 루프, 최대 3회 |
 | TDD-09 | FR-13, FR-14 | `test_report_builder.py` | Markdown/HTML 보고서 생성 |
 | TDD-10 | FR-15, NFR-03 | `test_graph_flow.py` | `run_log.json` 생성과 실패 노드 기록 |
-| TDD-11 | FR-16, NFR-02 | `test_graph_flow.py`, `test_report_builder.py` | Executor 교체와 API Key 미노출 |
+| TDD-11 | FR-16, FR-17, NFR-02 | `test_graph_flow.py`, `test_parser.py` | Perplexity 프롬프트 생성과 Markdown 결과 파일 입력 |
 
 ## 테스트 작성 원칙
 
 - 한 테스트는 하나의 핵심 행동만 검증한다.
-- 실제 Perplexity API 호출은 기본 단위 테스트에서 하지 않는다.
+- 실제 Perplexity API 호출은 하지 않는다.
 - 파일 생성 테스트는 임시 디렉터리를 사용한다.
 - Plan Gate 테스트에서는 Mock Executor 호출 횟수를 확인한다.
+- HITL 테스트에서는 사용자가 가져온 결과 파일을 테스트 fixture로 대체한다.
 - 개선 루프 테스트에서는 의도적으로 낮은 점수를 반환하는 Mock을 사용한다.
 
 ## 완료 기준
@@ -117,7 +119,7 @@ Refactor: 중복과 이름만 정리
 - 개선 루프 3회 제한 확인
 - Markdown 보고서 생성 확인
 - HTML 보고서 생성 확인
-- API Key 노출 방지 확인
+- API Key 없이 동작 확인
 
 ## TDD 단계별 완료 판정
 
@@ -125,7 +127,7 @@ Refactor: 중복과 이름만 정리
 | --- | --- |
 | Phase 1 | Plan Gate, Mock Executor, Parser, Report 테스트가 통과한다. |
 | Phase 2 | Evaluator와 Improvement Loop 테스트가 통과한다. |
-| Phase 3 | Perplexity Executor 선택과 API Key 미노출 테스트가 통과한다. |
+| Phase 3 | HITL 프롬프트 생성과 Markdown 결과 파일 입력 테스트가 통과한다. |
 
 ## 문서 자체 평가
 

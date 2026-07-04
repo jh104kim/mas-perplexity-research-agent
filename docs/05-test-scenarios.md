@@ -23,7 +23,7 @@
 | 접두어 | 의미 |
 | --- | --- |
 | TC-GATE | Plan 승인 게이트 |
-| TC-EXEC | Executor 선택과 실행 |
+| TC-EXEC | Mock 실행과 HITL 결과 입력 |
 | TC-EVAL | 평가 |
 | TC-LOOP | 개선 루프 |
 | TC-REPORT | 보고서와 산출물 |
@@ -43,8 +43,9 @@
 | ID | Given | When | Then | 연결 요구사항 |
 | --- | --- | --- | --- | --- |
 | TC-EXEC-01 | mode가 `mock` | Executor 실행 | Mock Markdown 반환 | FR-08 |
-| TC-EXEC-02 | mode가 `perplexity` | Executor 선택 | Perplexity Executor 사용 | FR-16 |
-| TC-EXEC-03 | Plan 미승인 | Workflow 진행 | Executor 미호출 | FR-05 |
+| TC-EXEC-02 | mode가 `hitl` | Plan 승인 | Perplexity 리서치 프롬프트 생성 | FR-16 |
+| TC-EXEC-03 | mode가 `hitl` | Markdown 결과 파일 전달 | 파일 내용을 `raw_results`로 읽음 | FR-17 |
+| TC-EXEC-04 | Plan 미승인 | Workflow 진행 | 프롬프트 생성과 결과 파일 읽기 미실행 | FR-05 |
 
 ## Evaluator 시나리오
 
@@ -76,9 +77,9 @@
 
 | ID | Given | When | Then | 연결 요구사항 |
 | --- | --- | --- | --- | --- |
-| TC-SEC-01 | API Key가 환경변수에 있음 | 로그 저장 | Key 값 미노출 | NFR-02 |
-| TC-SEC-02 | API 호출 실패 | 에러 기록 | Key 값 미노출 | NFR-02, NFR-03 |
-| TC-SEC-03 | 보고서 생성 | 내용 확인 | Key 값 미노출 | NFR-02 |
+| TC-SEC-01 | API Key가 없어도 됨 | mock/hitl 실행 | Key 없이 Workflow 진행 | NFR-02 |
+| TC-SEC-02 | hitl 결과 파일이 없음 | Workflow 진행 | 사용자 입력 필요 상태 기록 | NFR-03 |
+| TC-SEC-03 | 보고서 생성 | 내용 확인 | 환경변수 값이 보고서에 노출되지 않음 | NFR-02 |
 
 ## 테스트명 예시
 
@@ -86,6 +87,8 @@
 test_plan_gate_does_not_call_executor_before_approve
 test_stop_exits_without_executor_call
 test_revise_regenerates_plan
+test_hitl_mode_exports_perplexity_prompt
+test_hitl_mode_reads_user_result_markdown
 test_improvement_loop_stops_after_three_attempts
 test_report_builder_writes_markdown_and_html
 ```

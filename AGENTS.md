@@ -32,7 +32,9 @@ Perplexity Research Agent MAS Workflow MVP를 만든다.
 주제 입력
 → 리서치 계획 생성
 → CLI에서 approve / revise / stop 선택
-→ 승인된 경우에만 Executor 실행
+→ 승인된 경우 Perplexity 리서치용 프롬프트 생성
+→ HITL 모드에서는 사용자가 Perplexity에서 직접 실행
+→ 사용자가 가져온 Markdown 결과 파일을 읽음
 → 결과 파싱
 → 평가
 → 필요 시 개선 루프 최대 3회
@@ -43,13 +45,13 @@ Perplexity Research Agent MAS Workflow MVP를 만든다.
 ## 가장 중요한 구현 원칙
 
 - 처음에는 반드시 `mock` 모드로 만든다.
-- `mock` 모드 테스트가 통과하기 전까지 실제 Perplexity 호출을 붙이지 않는다.
+- `mock` 모드 테스트가 통과하기 전까지 HITL 입력 흐름을 붙이지 않는다.
 - LangGraph 흐름과 Executor 구현을 분리한다.
-- `perplexity` 모드는 Executor만 교체한다.
-- Plan 승인 전에는 Executor를 절대 실행하지 않는다.
+- `hitl` 모드는 API를 호출하지 않고 사용자가 제공한 Markdown 결과 파일을 읽는다.
+- Plan 승인 전에는 리서치 프롬프트 생성과 결과 파일 읽기를 실행하지 않는다.
 - 평가 기준은 85점으로 고정한다.
 - 개선 루프는 최대 3회까지만 허용한다.
-- API Key는 로그, 보고서, 테스트 출력에 노출하지 않는다.
+- API Key는 기본적으로 사용하지 않는다. 나중에 외부 API를 붙이더라도 로그, 보고서, 테스트 출력에 노출하지 않는다.
 
 ## 문서 읽는 순서
 
@@ -83,10 +85,10 @@ Perplexity Research Agent MAS Workflow MVP를 만든다.
 4. `MockResearchExecutor`를 만든다.
 5. LangGraph 노드를 연결한다.
 6. CLI Plan 승인 게이트를 만든다.
-7. Parser, Evaluator, Critic, Improver를 만든다.
-8. Markdown 보고서와 HTML 보고서를 만든다.
-9. pytest로 mock mode 전체 흐름을 검증한다.
-10. 마지막에 `PerplexityResearchExecutor`를 추가한다.
+7. Perplexity 리서치 프롬프트 생성과 HITL 결과 파일 입력 흐름을 만든다.
+8. Parser, Evaluator, Critic, Improver를 만든다.
+9. Markdown 보고서와 HTML 보고서를 만든다.
+10. pytest로 mock mode와 hitl mode 흐름을 검증한다.
 11. README를 작성한다.
 
 ## TDD 작업 방식
@@ -122,6 +124,7 @@ Perplexity Research Agent MAS Workflow MVP를 만든다.
 아래 기능은 MVP에 넣지 않고 문서에만 남긴다.
 
 - Perplexity Web UI 자동화
+- Perplexity API 직접 호출
 - 웹 대시보드
 - Obsidian 저장
 - Slack 알림
